@@ -4,12 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Centered 3D Booklet with Touch Pan</title>
+    <title>LUMORA</title>
     <style>
         :root {
             --bg-dark: #0f172a;
             --page-bg: #ffffff;
             --spine-shadow: rgba(0, 0, 0, 0.2);
+            /* Standard high-res desktop display defaults */
             --page-w: 456.875px;
             --page-h: 645.625px;
         }
@@ -80,13 +81,13 @@
 
         .page-side.front {
             z-index: 2;
-            border-radius: 0 8px 8px 0;
+            border-radius: 0 1rem 1rem 0;
         }
 
         .page-side.back {
             transform: rotateY(180deg);
             z-index: 1;
-            border-radius: 8px 0 0 8px;
+            border-radius: 1rem 0 0 1rem;
         }
 
         .leaf:not(.turned) .front {
@@ -111,9 +112,9 @@
         }
 
         .img-container img {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
+            width: 100%;
+            height: 100%;
+            object-fit: cover; /* Changed to cover to completely fill the perfectly proportioned page box */
             display: block;
         }
 
@@ -133,63 +134,32 @@
             left: 15px;
         }
 
+        /* ==========================================================
+           RESPONSIVE UPGRADES: PERFECT ASPECT RATIO SCALING ON MOBILE
+        ========================================================== */
         @media (max-width: 768px) {
             :root {
-                --page-w: 280px;
-                --page-h: 400px;
+                /* Set width to fill the screen width */
+                --page-w: 92vw;
+                /* Dynamically calculates exact target height to scale according to the images' print aspect ratio (645.625 / 456.875 = 1.413) */
+                --page-h: calc(92vw * 1.413);
+            }
+
+            /* Max safety constraint check: protects tall layouts from cutting off on exceptionally short screen viewports */
+            @media (max-height: 680px) {
+                :root {
+                    --page-h: 78vh;
+                    --page-w: calc(78vh / 1.413);
+                }
             }
 
             .scene {
-                perspective: 1300px;
+                perspective: 1500px;
             }
 
             .book-chassis {
                 transform: translateX(calc(var(--page-w) / -2));
             }
-        }
-
-        .sticky-bottom-right {
-            /* 1. Anchor it to the browser viewport instead of the page document */
-            position: fixed;
-            
-            /* 2. Position it precisely in the bottom-right corner (adjust pixels for spacing) */
-            bottom: 20px;
-            /* right: 20px; */
-            
-            /* 3. Force it to stay on top of all other standard layered elements */
-            z-index: 9999;
-            
-            /* Visual Styling (Customizable) */
-            background-color: #33507b;
-            color: #ffffff;
-            padding: 9px 14px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            /* font-family: sans-serif; */
-            /* font-weight: bold; */
-            cursor: pointer;
-        }
-
-        .sticky-bottom-top {
-            /* 1. Anchor it to the browser viewport instead of the page document */
-            position: fixed;
-            
-            /* 2. Position it precisely in the bottom-right corner (adjust pixels for spacing) */
-            top: 20px;
-            /* right: 20px; */
-            
-            /* 3. Force it to stay on top of all other standard layered elements */
-            z-index: 9999;
-            
-            /* Visual Styling (Customizable) */
-            background-color: #33507b;
-            color: #ffffff;
-            padding: 9px 14px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            /* font-family: sans-serif; */
-            /* font-weight: bold; */
-            cursor: pointer;
         }
     </style>
 </head>
@@ -202,13 +172,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_1.png" alt="Front Cover">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_1.png" alt="Front Cover">
                     </div>
                     <div class="page-count">0</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_2.png" alt="Page 1">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_2.png" alt="Page 1">
                     </div>
                     <div class="page-count">1</div>
                 </div>
@@ -217,13 +187,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_2.png" alt="Page 2">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_2.png" alt="Page 2">
                     </div>
                     <div class="page-count">2</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_3.png" alt="Page 3">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_3.png" alt="Page 3">
                     </div>
                     <div class="page-count">3</div>
                 </div>
@@ -232,13 +202,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_3.png" alt="Page 4">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_3.png" alt="Page 4">
                     </div>
                     <div class="page-count">4</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_4.png" alt="Page 5">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_4.png" alt="Page 5">
                     </div>
                     <div class="page-count">5</div>
                 </div>
@@ -247,13 +217,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_4.png" alt="Page 6">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_4.png" alt="Page 6">
                     </div>
                     <div class="page-count">6</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_5.png" alt="Page 7">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_5.png" alt="Page 7">
                     </div>
                     <div class="page-count">7</div>
                 </div>
@@ -262,13 +232,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_5.png" alt="Page 8">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_5.png" alt="Page 8">
                     </div>
                     <div class="page-count">8</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_6.png" alt="Page 9">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-1_6.png" alt="Page 9">
                     </div>
                     <div class="page-count">9</div>
                 </div>
@@ -277,26 +247,19 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_6.png" alt="Page 10">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_6.png" alt="Page 10">
                     </div>
                     <div class="page-count">10</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_1.png" alt="Back Cover">
+                        <img src="page_pictures/DIPLOMA GRAD_BOOKLET_PDF-2_1.png" alt="Back Cover">
                     </div>
                     <div class="page-count">11</div>
                 </div>
             </div>
 
         </div>
-    </div>
-
-    <div class="sticky-bottom-top">
-        <p>Click the page to flip to next Page.</p>
-    </div>
-    <div class="sticky-bottom-right">
-        <p>Click and Drag the Screen to view left and Right.</p>
     </div>
 
     <script>
@@ -309,43 +272,42 @@
         let touchStartX = 0;
         let currentPanOffset = 0;
         let isDragging = false;
+        let clickedSide = "none"; 
 
-        // Core dynamic 3D layering engine fixes the page overlapping errors
         function updateZIndices() {
             leaves.forEach((leaf, i) => {
                 if (i <= turnIndex) {
-                    // Left side stack: Higher page index elements stay on top
                     leaf.style.zIndex = i + 1;
                 } else {
-                    // Right side stack: Lower page index elements stay on top (Cover on load)
                     leaf.style.zIndex = leaves.length - i;
                 }
             });
         }
 
-        // Calculates baseline structural target positions for the book object chassis
         function getBaseChassisTranslation() {
             if (window.innerWidth > 768) return 0;
 
             if (turnIndex === -1) {
-                return -140; // Clamps front cover centered on mobile screen load
+                return parseFloat(window.innerWidth * -0.46); 
             } else if (turnIndex === leaves.length - 1) {
-                return 140;   // Clamps back cover centered on mobile screen close
+                return parseFloat(window.innerWidth * 0.46);  
             } else {
-                return 0;     // Inside spreads align cleanly to the center fold axis
+                if (clickedSide === "right") {
+                    return parseFloat(window.innerWidth * -0.46); 
+                } else if (clickedSide === "left") {
+                    return parseFloat(window.innerWidth * 0.46);  
+                }
+                return 0; 
             }
         }
 
         function updateChassisTransform(additionalOffset = 0) {
+            if (window.innerWidth > 768) return;
             const baseValue = getBaseChassisTranslation();
             const totalX = baseValue + additionalOffset;
-
-            if (window.innerWidth <= 768) {
-                chassis.style.transform = `translateX(${totalX}px)`;
-            }
+            chassis.style.transform = `translateX(${totalX}px)`;
         }
 
-        // Global Click Navigation Router
         window.addEventListener('click', (e) => {
             if (isDragging && Math.abs(currentPanOffset) > 10) return;
 
@@ -353,6 +315,7 @@
             const targetRight = e.clientX > (viewportW / 2);
 
             if (targetRight) {
+                clickedSide = "right";
                 for (let i = 0; i < leaves.length; i++) {
                     if (!leaves[i].classList.contains('turned')) {
                         leaves[i].classList.add('turned');
@@ -361,6 +324,7 @@
                     }
                 }
             } else {
+                clickedSide = "left";
                 for (let i = leaves.length - 1; i >= 0; i--) {
                     if (leaves[i].classList.contains('turned')) {
                         leaves[i].classList.remove('turned');
@@ -370,14 +334,14 @@
                 }
             }
             updateZIndices();
+            chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
             updateChassisTransform();
         });
 
-        // Touch Event Listeners for Mobile View Panning Focus
         window.addEventListener('touchstart', (e) => {
             if (window.innerWidth <= 768) {
                 touchStartX = e.touches[0].clientX;
-                chassis.style.transition = 'none';
+                chassis.style.transition = 'none'; 
                 isDragging = true;
             }
         }, { passive: true });
@@ -388,15 +352,16 @@
             const currentX = e.touches[0].clientX;
             currentPanOffset = currentX - touchStartX;
 
-            if (currentPanOffset > 150) currentPanOffset = 150;
-            if (currentPanOffset < -150) currentPanOffset = -150;
+            const maxPan = window.innerWidth * 0.5;
+            if (currentPanOffset > maxPan) currentPanOffset = maxPan;
+            if (currentPanOffset < -maxPan) currentPanOffset = -maxPan;
 
             updateChassisTransform(currentPanOffset);
         }, { passive: true });
 
         window.addEventListener('touchend', () => {
             if (!isDragging) return;
-
+            
             chassis.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
             currentPanOffset = 0;
             updateChassisTransform();
@@ -404,7 +369,6 @@
             setTimeout(() => { isDragging = false; }, 50);
         });
 
-        // Desktop Pointer Parallax Tracking Matrix
         document.body.addEventListener('mousemove', (e) => {
             if (window.innerWidth > 768) {
                 const tiltY = (window.innerWidth / 2 - e.pageX) / 50;
@@ -420,7 +384,6 @@
             updateChassisTransform();
         });
 
-        // Initialize layering order immediately on page lifecycle load
         updateZIndices();
         updateChassisTransform();
     </script>
