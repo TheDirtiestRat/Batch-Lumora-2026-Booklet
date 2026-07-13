@@ -69,6 +69,7 @@
         let currentPageIndex = 0;
         let isAnimating = false;
         let isDragging = false;
+        let isMultiTouchDetected = false; // Flag to prevent triggering flip if user used multiple fingers
         
         // Tracking metrics
         let dragStartX = 0;
@@ -82,6 +83,7 @@
         function handleDragStart(clientX, clientY) {
             if (isAnimating) return;
             isDragging = true;
+            isMultiTouchDetected = false; // Reset on new touch start
             dragStartX = clientX;
             dragStartY = clientY;
             dragStartTime = performance.now();
@@ -99,17 +101,23 @@
 
         // 🔄 REAL-TIME DRAG TRACKING WITH 3D TILT EFFECT
         function handleDragMove(clientX, clientY) {
-            if (!isDragging || isAnimating) return;
+            if (!isDragging || isAnimating || isMultiTouchDetected) return;
 
             const deltaX = clientX - dragStartX;
             const deltaY = clientY - dragStartY;
 
             // Generate custom rotational coordinates based on displacement
-            const tiltY = (deltaX / window.innerWidth) * 45;  // Adjust number for extreme or subtle horizontal tilt
-            const tiltX = -(deltaY / window.innerHeight) * 30; // Adjust number for extreme or subtle vertical tilt
+            const tiltY = (deltaX / window.innerWidth) * 45;  
+            const tiltX = -(deltaY / window.innerHeight) * 30; 
 
             // Live-render the 3D position state
             deckCard.style.transform = `translate3d(${deltaX}px, ${deltaY * 0.2}px, 0) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+        }
+
+        // 🛑 RESET TO CENTER STACK
+        function resetCardPosition() {
+            deckCard.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            deckCard.style.transform = 'translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg)';
         }
 
         // 🏁 EVALUATE SWIPE OUTCOME ON RELEASE
@@ -117,6 +125,12 @@
             if (!isDragging || isAnimating) return;
             isDragging = false;
             
+            // Abort the page flip if multiple fingers were detected during the gesture lifecycle
+            if (isMultiTouchDetected) {
+                resetCardPosition();
+                return;
+            }
+
             const dragEndTime = performance.now();
             const deltaX = clientX - dragStartX;
             const dragDuration = dragEndTime - dragStartTime;
@@ -124,8 +138,7 @@
 
             // 🛑 GESTURE REJECTED: Return smoothly back to center if swipe was too weak or slow
             if (Math.abs(deltaX) < dragMinDistance || dragVelocity < dragMinVelocity) {
-                deckCard.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                deckCard.style.transform = 'translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg)';
+                resetCardPosition();
                 return;
             }
 
@@ -177,18 +190,48 @@
             }, 400); // perfectly timed with the fly-off animation duration
         }
 
-        // 📱 TOUCH LISTENERS (MOBILE)
+        // 📱 TOUCH LISTENERS (MOBILE ENHANCED FOR MULTI-TOUCH ZOOM PROTECTION)
         deckCard.addEventListener('touchstart', (e) => {
+            // Guard clause: If more than one finger touches down, block or cancel the drag lifecycle
+            if (e.touches.length > 1) {
+                isMultiTouchDetected = true;
+                if (isDragging) {
+                    isDragging = false;
+                    resetCardPosition();
+                }
+                return;
+            }
             handleDragStart(e.touches[0].clientX, e.touches[0].clientY);
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
-            if (isDragging) handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+            // If another finger enters the layout while moving, trip the flag and snap back instantly
+            if (e.touches.length > 1) {
+                isMultiTouchDetected = true;
+                if (isDragging) {
+                    isDragging = false;
+                    resetCardPosition();
+                }
+                return;
+            }
+            if (isDragging && !isMultiTouchDetected) {
+                handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+            }
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
-            if (isDragging && e.changedTouches.length > 0) {
-                handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+            // If dragging, process the lift event using the tracked coordinates
+            if (isDragging) {
+                // e.touches shows remaining fingers. If fingers are still on the glass, ignore the swipe ending.
+                if (e.touches.length > 0 || isMultiTouchDetected) {
+                    isMultiTouchDetected = true;
+                    isDragging = false;
+                    resetCardPosition();
+                    return;
+                }
+                if (e.changedTouches.length > 0) {
+                    handleDragEnd(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+                }
             }
         });
 
