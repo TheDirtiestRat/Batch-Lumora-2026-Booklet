@@ -88,13 +88,31 @@
         let currentPageIndex = 0;
         let isAnimating = false;
 
-        deckCard.addEventListener('click', () => {
+        deckCard.addEventListener('click', (e) => {
             // Guard lock structure to block execution overlap
             if (isAnimating) return;
             isAnimating = true;
 
-            // Continuous loop index calculations
-            const nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+            // Determine click direction based on screen positioning
+            const viewportWidth = window.innerWidth;
+            const isClickRightSide = e.clientX > (viewportWidth / 2);
+
+            let nextPageIndex;
+            let rotationAngle;
+
+            if (isClickRightSide) {
+                // Next Page: Increment index (Loop forward to 0 if at the end)
+                nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+                // Spin clockwise/right-to-left
+                rotationAngle = '-180deg';
+            } else {
+                // Previous Page: Decrement index (Loop backward to last page if at 0)
+                nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+                // Spin counter-clockwise/left-to-right for visual direction matching
+                rotationAngle = '180deg';
+            }
+
+            // Calculate prefetch index for the next predictive step forward
             const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
 
             // Load upcoming layout configuration onto the hidden reverse panel template
@@ -102,7 +120,7 @@
             backCounter.innerText = nextPageIndex;
 
             // Execute center-axis deck spin transition rotation configuration
-            deckCard.style.transform = 'rotateY(-180deg)';
+            deckCard.style.transform = `rotateY(${rotationAngle})`;
 
             // Cleanly swap out presentation layers at the 90-degree inversion point
             setTimeout(() => {
@@ -128,6 +146,51 @@
                 nextImageCache.src = pageImages[prefetchIndex];
             }, 700); // Perfectly synced with the 700ms duration utility transitions
         });
+
+        
+        // let currentPageIndex = 0;
+        // let isAnimating = false;
+
+        // deckCard.addEventListener('click', () => {
+        //     // Guard lock structure to block execution overlap
+        //     if (isAnimating) return;
+        //     isAnimating = true;
+
+        //     // Continuous loop index calculations
+        //     const nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+        //     const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+        //     // Load upcoming layout configuration onto the hidden reverse panel template
+        //     backImg.src = pageImages[nextPageIndex];
+        //     backCounter.innerText = nextPageIndex;
+
+        //     // Execute center-axis deck spin transition rotation configuration
+        //     deckCard.style.transform = 'rotateY(-180deg)';
+
+        //     // Cleanly swap out presentation layers at the 90-degree inversion point
+        //     setTimeout(() => {
+        //         // Sync front view layer contents instantly to reflect active index updates
+        //         frontImg.src = pageImages[nextPageIndex];
+        //         frontCounter.innerText = nextPageIndex;
+                
+        //         // Drop transitions briefly to return the card coordinate system back to base invisibly
+        //         deckCard.style.transition = 'none';
+        //         deckCard.style.transform = 'rotateY(0deg)';
+                
+        //         // Force layout hardware refresh cycle run processing validation checks
+        //         deckCard.offsetHeight; 
+                
+        //         // Restore standard animation styles
+        //         deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+        //         currentPageIndex = nextPageIndex;
+        //         isAnimating = false;
+
+        //         // Preloader task to dynamically pre-fetch subsequent images asynchronously
+        //         const nextImageCache = new Image();
+        //         nextImageCache.src = pageImages[prefetchIndex];
+        //     }, 700); // Perfectly synced with the 700ms duration utility transitions
+        // });
     </script>
 </body>
 
