@@ -108,7 +108,6 @@
             background: linear-gradient(to right, #fff 94%, var(--spine-shadow) 100%);
         }
 
-        /* Leaf turned styles optimized using 3D depth buffers to force explicit sorting layers */
         .leaf.turned {
             transform: rotateY(-180deg);
             -webkit-transform: rotateY(-180deg);
@@ -316,29 +315,27 @@
             }
         }
 
-        // Updated explicitly for iOS Safari: assigns physical Z translate offsets to guarantee layer rendering stability
+        // FIXED: Re-calculated 3D stacking mathematics for the inverted rotation plane
         function updateZIndices() {
             leaves.forEach((leaf, i) => {
-                let calculatedZ = 0;
                 if (i <= turnIndex) {
-                    calculatedZ = i + 1;
+                    // LEFT SIDE PAGES: As 'i' goes up, it must sit closer to the user.
+                    const leftZ = i + 1;
+                    leaf.style.zIndex = leftZ;
+                    
+                    // Because rotateY(-180deg) flips the local Z-axis inward, positive steps push elements deeper.
+                    // (turnIndex - i) ensures the active turned page remains at 0px depth, while pages underneath are buried deeper.
+                    const leftDepth = (turnIndex - i) * 0.1;
+                    leaf.style.transform = `rotateY(-180deg) translateZ(${leftDepth}px)`;
+                    leaf.style.webkitTransform = `rotateY(-180deg) translateZ(${leftDepth}px)`;
                 } else {
-                    calculatedZ = leaves.length - i;
-                }
-                
-                // Inject cross-browser support inline styles to force layering
-                leaf.style.zIndex = calculatedZ;
-                
-                // Apply subtle 3D translation offset layers to force strict iOS WebKit render sequence sorting
-                const currentTransform = leaf.style.transform || "";
-                const baseTransform = currentTransform.replace(/translateZ\([^)]+\)/g, "").trim();
-                
-                if (leaf.classList.contains('turned')) {
-                    leaf.style.transform = `rotateY(-180deg) translateZ(${calculatedZ * 0.1}px)`;
-                    leaf.style.webkitTransform = `rotateY(-180deg) translateZ(${calculatedZ * 0.1}px)`;
-                } else {
-                    leaf.style.transform = `rotateY(0deg) translateZ(${calculatedZ * 0.1}px)`;
-                    leaf.style.webkitTransform = `rotateY(0deg) translateZ(${calculatedZ * 0.1}px)`;
+                    // RIGHT SIDE PAGES: As 'i' goes up, it drops deeper into the background stack.
+                    const rightZ = leaves.length - i;
+                    leaf.style.zIndex = rightZ;
+                    
+                    // Standard flat layout plane: positive translateZ pulls elements closer to the screen viewer.
+                    leaf.style.transform = `rotateY(0deg) translateZ(${rightZ * 0.1}px)`;
+                    leaf.style.webkitTransform = `rotateY(0deg) translateZ(${rightZ * 0.1}px)`;
                 }
             });
         }
@@ -369,7 +366,6 @@
             chassis.style.webkitTransform = `translateX(${totalX}px)`;
         }
 
-        // Unified click/tap execution matrix routing handler
         function handleNavigationInteraction(clientX) {
             if (isDragging && Math.abs(currentPanOffset) > 10) return;
 
@@ -377,7 +373,6 @@
             const targetRight = clientX > (viewportW / 2);
             const selectedSide = targetRight ? "right" : "left";
 
-            // Mobile-Only Focus Loop Interceptor Logic Layer
             if (window.innerWidth <= 768) {
                 if (turnIndex !== -1 && turnIndex !== leaves.length - 1) {
                     if (currentFocusSide !== selectedSide) {
@@ -390,7 +385,6 @@
                 }
             }
 
-            // Turning Logic Actions Execution Layer
             if (selectedSide === "right") {
                 currentFocusSide = "right";
                 for (let i = 0; i < leaves.length; i++) {
@@ -416,14 +410,11 @@
             updateChassisTransform();
         }
 
-        // Handle standard tap events on mouse viewports
         window.addEventListener('click', (e) => {
-            // Prevent execution if triggered by mobile touch emulation events
             if (window.innerWidth <= 768) return; 
             handleNavigationInteraction(e.clientX);
         });
 
-        // Touch Interaction Handlers explicitly calibrated to intercept iPhone Safari cycles
         window.addEventListener('touchstart', (e) => {
             if (window.innerWidth <= 768) {
                 touchStartX = e.touches[0].clientX;
@@ -454,7 +445,6 @@
             
             const finalOffset = currentPanOffset;
             
-            // Adjust current focus state index mapping if manual drag passes critical shift criteria limits
             if (finalOffset > 40) {
                 currentFocusSide = "left";
             } else if (finalOffset < -40) {
@@ -466,7 +456,6 @@
 
             setTimeout(() => { isDragging = false; }, 50);
 
-            // If it was a quick tap instead of a definitive drag pan, route layout navigation directly
             if (Math.abs(finalOffset) < 7) {
                 if (e.changedTouches && e.changedTouches.length > 0) {
                     handleNavigationInteraction(e.changedTouches[0].clientX);
@@ -474,7 +463,6 @@
             }
         });
 
-        // Desktop Pointer Parallax Tracking (Active only on wider desktop layouts)
         document.body.addEventListener('mousemove', (e) => {
             if (window.innerWidth > 768) {
                 const tiltY = (window.innerWidth / 2 - e.pageX) / 50;
@@ -494,7 +482,6 @@
             updateInstructions();
         });
 
-        // Run Initial Setup Cycles on compilation execution
         updateZIndices();
         updateChassisTransform();
         updateInstructions();
