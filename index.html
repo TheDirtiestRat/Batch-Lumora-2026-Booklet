@@ -147,6 +147,50 @@
                 transform: translateX(calc(var(--page-w) / -2));
             }
         }
+
+        .sticky-bottom-right {
+            /* 1. Anchor it to the browser viewport instead of the page document */
+            position: fixed;
+            
+            /* 2. Position it precisely in the bottom-right corner (adjust pixels for spacing) */
+            bottom: 20px;
+            /* right: 20px; */
+            
+            /* 3. Force it to stay on top of all other standard layered elements */
+            z-index: 9999;
+            
+            /* Visual Styling (Customizable) */
+            background-color: #33507b;
+            color: #ffffff;
+            padding: 9px 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            /* font-family: sans-serif; */
+            /* font-weight: bold; */
+            cursor: pointer;
+        }
+
+        .sticky-bottom-top {
+            /* 1. Anchor it to the browser viewport instead of the page document */
+            position: fixed;
+            
+            /* 2. Position it precisely in the bottom-right corner (adjust pixels for spacing) */
+            top: 20px;
+            /* right: 20px; */
+            
+            /* 3. Force it to stay on top of all other standard layered elements */
+            z-index: 9999;
+            
+            /* Visual Styling (Customizable) */
+            background-color: #33507b;
+            color: #ffffff;
+            padding: 9px 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            /* font-family: sans-serif; */
+            /* font-weight: bold; */
+            cursor: pointer;
+        }
     </style>
 </head>
 
@@ -158,13 +202,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_1.png" alt="Front Cover">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_1.png" alt="Front Cover">
                     </div>
                     <div class="page-count">0</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_2.png" alt="Page 1">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_2.png" alt="Page 1">
                     </div>
                     <div class="page-count">1</div>
                 </div>
@@ -173,13 +217,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_2.png" alt="Page 2">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_2.png" alt="Page 2">
                     </div>
                     <div class="page-count">2</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_3.png" alt="Page 3">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_3.png" alt="Page 3">
                     </div>
                     <div class="page-count">3</div>
                 </div>
@@ -188,13 +232,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_3.png" alt="Page 4">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_3.png" alt="Page 4">
                     </div>
                     <div class="page-count">4</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_4.png" alt="Page 5">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_4.png" alt="Page 5">
                     </div>
                     <div class="page-count">5</div>
                 </div>
@@ -203,13 +247,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_4.png" alt="Page 6">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_4.png" alt="Page 6">
                     </div>
                     <div class="page-count">6</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_5.png" alt="Page 7">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_5.png" alt="Page 7">
                     </div>
                     <div class="page-count">7</div>
                 </div>
@@ -218,13 +262,13 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_5.png" alt="Page 8">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_5.png" alt="Page 8">
                     </div>
                     <div class="page-count">8</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-1_6.png" alt="Page 9">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-1_6.png" alt="Page 9">
                     </div>
                     <div class="page-count">9</div>
                 </div>
@@ -233,19 +277,26 @@
             <div class="leaf">
                 <div class="page-side front">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_6.png" alt="Page 10">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_6.png" alt="Page 10">
                     </div>
                     <div class="page-count">10</div>
                 </div>
                 <div class="page-side back">
                     <div class="img-container">
-                        <img src="Pages Pictures\DIPLOMA GRAD_BOOKLET_PDF-2_1.png" alt="Back Cover">
+                        <img src="page_pictures\DIPLOMA GRAD_BOOKLET_PDF-2_1.png" alt="Back Cover">
                     </div>
                     <div class="page-count">11</div>
                 </div>
             </div>
 
         </div>
+    </div>
+
+    <div class="sticky-bottom-top">
+        <p>Click the page to flip to next Page.</p>
+    </div>
+    <div class="sticky-bottom-right">
+        <p>Click and Drag the Screen to view left and Right.</p>
     </div>
 
     <script>
@@ -345,7 +396,7 @@
 
         window.addEventListener('touchend', () => {
             if (!isDragging) return;
-            
+
             chassis.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
             currentPanOffset = 0;
             updateChassisTransform();
