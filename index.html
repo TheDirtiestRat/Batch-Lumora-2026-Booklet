@@ -4,621 +4,130 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <title>LUMORA</title>
+    <title>LUMORA - Deck Presentation View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        :root {
-            --bg-dark: #0f172a;
-            --page-bg: #ffffff;
-            --spine-shadow: rgba(0, 0, 0, 0.2);
-            /* Standard high-res desktop display defaults */
-            --page-w: 456.875px;
-            --page-h: 645.625px;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--bg-dark);
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            user-select: none;
-            -webkit-user-select: none;
-        }
-
-        .scene {
+        /* Essential 3D Deck Flip Custom Matrix Utilities */
+        .perspective-2000 {
             perspective: 2000px;
-            -webkit-perspective: 2000px; /* Safari iOS support fix */
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            position: relative;
         }
-
-        .book-chassis {
-            position: relative;
-            width: calc(var(--page-w) * 2);
-            height: var(--page-h);
+        .preserve-3d {
             transform-style: preserve-3d;
-            -webkit-transform-style: preserve-3d; /* Safari iOS support fix */
-            transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
-            -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
-
-        .leaf {
-            position: absolute;
-            width: var(--page-w);
-            height: var(--page-h);
-            left: 50%;
-            top: 0;
-            transform-origin: left center;
-            -webkit-transform-origin: left center;
-            transform-style: preserve-3d;
-            -webkit-transform-style: preserve-3d; /* Safari iOS support fix */
-            transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-            -webkit-transition: -webkit-transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
-            cursor: pointer;
-            
-            /* Eliminates tap highlight box artifacts on mobile engines */
-            -webkit-tap-highlight-color: transparent; 
-        }
-
-        .page-side {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            top: 0;
-            left: 0;
-            background: var(--page-bg);
+        .backface-hidden {
             backface-visibility: hidden;
-            -webkit-backface-visibility: hidden; /* Safari iOS support fix */
-            overflow: hidden;
-            box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.02);
-            display: flex;
-            flex-direction: column;
+            -webkit-backface-visibility: hidden;
         }
-
-        .page-side.front {
-            z-index: 2;
-            border-radius: 0 1rem 1rem 0;
-        }
-
-        .page-side.back {
+        .rotate-y-180 {
             transform: rotateY(180deg);
-            -webkit-transform: rotateY(180deg);
-            z-index: 1;
-            border-radius: 1rem 0 0 1rem;
-        }
-
-        .leaf:not(.turned) .front {
-            background: linear-gradient(to left, #fff 94%, var(--spine-shadow) 100%);
-        }
-
-        .leaf.turned .back {
-            background: linear-gradient(to right, #fff 94%, var(--spine-shadow) 100%);
-        }
-
-        .leaf.turned {
-            transform: rotateY(-180deg);
-            -webkit-transform: rotateY(-180deg);
-        }
-
-        .img-container {
-            width: 100%;
-            height: 100%;
-            background: #111827;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .img-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            display: block;
-        }
-
-        .page-count {
-            position: absolute;
-            bottom: 12px;
-            font-size: 0.7rem;
-            color: #94a3b8;
-            font-weight: bold;
-        }
-
-        .front .page-count {
-            right: 15px;
-        }
-
-        .back .page-count {
-            left: 15px;
-        }
-
-        /* Floating Navigation Instructions Note */
-        .nav-instructions {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            -webkit-transform: translateX(-50%);
-            background: rgba(15, 23, 42, 0.85);
-            color: #f8fafc;
-            padding: 10px 20px;
-            border-radius: 50px;
-            font-size: 0.8rem;
-            pointer-events: none;
-            z-index: 9999;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            text-align: center;
-            white-space: nowrap;
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-            transition: opacity 0.3s ease;
-        }
-
-        /* Responsive configuration mappings */
-        @media (max-width: 768px) {
-            :root {
-                --page-w: 92vw;
-                --page-h: calc(92vw * 1.413);
-            }
-
-            @media (max-height: 680px) {
-                :root {
-                    --page-h: 78vh;
-                    --page-w: calc(78vh / 1.413);
-                }
-            }
-
-            .scene {
-                perspective: 1500px;
-                -webkit-perspective: 1500px;
-                align-items: center;
-            }
-
-            .book-chassis {
-                transform: translateX(calc(var(--page-w) / -2));
-                -webkit-transform: translateX(calc(var(--page-w) / -2));
-            }
         }
     </style>
 </head>
 
-<body>
+<body class="bg-slate-900 w-screen h-screen flex items-center justify-center overflow-hidden select-none antialiased">
 
-    <div class="scene">
-        <div class="book-chassis" id="bookObject">
+    <div class="w-full h-full p-4 sm:p-6 md:p-8 flex items-center justify-center">
+        
+        <div class="perspective-2000 w-full h-full flex items-center justify-center relative">
+            
+            <div id="presentationPage" class="preserve-3d relative w-full h-full max-w-full max-h-full aspect-[456.875/645.625] cursor-pointer transition-transform duration-700 ease-out shadow-2xl rounded-2xl origin-center">
+                
+                <div class="backface-hidden absolute inset-0 bg-slate-950 rounded-2xl overflow-hidden flex flex-col border border-slate-700/30 z-10">
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="frontImg" src="page_pictures/PDF LUMORA-01.webp" alt="Active Page Image" class="w-full h-full object-contain pointer-events-none">
+                    </div>
+                    <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/5">
+                        Page <span id="frontPageCount">0</span>
+                    </div>
+                </div>
 
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-01.webp" alt="Front Cover">
+                <div class="backface-hidden rotate-y-180 absolute inset-0 bg-slate-950 rounded-2xl overflow-hidden flex flex-col border border-slate-700/30">
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="backImg" src="page_pictures/PDF LUMORA-02.webp" alt="Next Page Buffer" class="w-full h-full object-contain pointer-events-none">
                     </div>
-                    <div class="page-count">0</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-02.webp" alt="Page 1">
+                    <div class="absolute bottom-4 left-4 font-bold text-xs text-slate-400 bg-slate-900/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/5">
+                        Page <span id="backPageCount">1</span>
                     </div>
-                    <div class="page-count">1</div>
                 </div>
+
             </div>
 
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-03.webp" alt="Page 2">
-                    </div>
-                    <div class="page-count">2</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-04.webp" alt="Page 3">
-                    </div>
-                    <div class="page-count">3</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-05.webp" alt="Page 4">
-                    </div>
-                    <div class="page-count">4</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-06.webp" alt="Page 5">
-                    </div>
-                    <div class="page-count">5</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-07.webp" alt="Page 6">
-                    </div>
-                    <div class="page-count">6</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-08.webp" alt="Page 7">
-                    </div>
-                    <div class="page-count">7</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-09.webp" alt="Page 8">
-                    </div>
-                    <div class="page-count">8</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-10.webp" alt="Page 9">
-                    </div>
-                    <div class="page-count">9</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-11.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">10</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-12.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">11</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-12.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">12</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-13.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">13</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-14.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">14</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-15.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">15</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-16.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">16</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-17.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">17</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-18.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">18</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-19.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">19</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-20.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">20</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-21.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">21</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-22.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">22</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-23.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">23</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-24.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">24</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-25.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">25</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-26.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">26</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-27.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">27</div>
-                </div>
-            </div>
-
-            <div class="leaf">
-                <div class="page-side front">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-28.webp" alt="Page 10">
-                    </div>
-                    <div class="page-count">28</div>
-                </div>
-                <div class="page-side back">
-                    <div class="img-container">
-                        <img src="page_pictures/PDF LUMORA-29.webp" alt="Back Cover">
-                    </div>
-                    <div class="page-count">29</div>
-                </div>
-            </div>
         </div>
     </div>
 
-    <div class="nav-instructions" id="instructionNote">Click Left/Right sides to flip pages</div>
+    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950/80 text-slate-200 text-xs md:text-sm font-medium tracking-wide px-6 py-3 rounded-full pointer-events-none z-50 shadow-xl border border-white/10 backdrop-blur-md">
+        🃏 Click anywhere on the card to flip to the next page
+    </div>
 
     <script>
-        const chassis = document.getElementById('bookObject');
-        const leaves = Array.from(document.querySelectorAll('.leaf'));
-        const instructionNote = document.getElementById('instructionNote');
+        // Array Catalog Map representing your production layout design slides
+        const pageImages = [
+            "page_pictures/PDF LUMORA-01.webp", "page_pictures/PDF LUMORA-02.webp",
+            "page_pictures/PDF LUMORA-03.webp", "page_pictures/PDF LUMORA-04.webp",
+            "page_pictures/PDF LUMORA-05.webp", "page_pictures/PDF LUMORA-06.webp",
+            "page_pictures/PDF LUMORA-07.webp", "page_pictures/PDF LUMORA-08.webp",
+            "page_pictures/PDF LUMORA-09.webp", "page_pictures/PDF LUMORA-10.webp",
+            "page_pictures/PDF LUMORA-11.webp", "page_pictures/PDF LUMORA-12.webp",
+            "page_pictures/PDF LUMORA-13.webp", "page_pictures/PDF LUMORA-14.webp",
+            "page_pictures/PDF LUMORA-15.webp", "page_pictures/PDF LUMORA-16.webp",
+            "page_pictures/PDF LUMORA-17.webp", "page_pictures/PDF LUMORA-18.webp",
+            "page_pictures/PDF LUMORA-19.webp", "page_pictures/PDF LUMORA-20.webp",
+            "page_pictures/PDF LUMORA-21.webp", "page_pictures/PDF LUMORA-22.webp",
+            "page_pictures/PDF LUMORA-23.webp", "page_pictures/PDF LUMORA-24.webp",
+            "page_pictures/PDF LUMORA-25.webp", "page_pictures/PDF LUMORA-26.webp",
+            "page_pictures/PDF LUMORA-27.webp", "page_pictures/PDF LUMORA-28.webp",
+            "page_pictures/PDF LUMORA-29.webp"
+        ];
 
-        let turnIndex = -1;
-        let touchStartX = 0;
-        let currentPanOffset = 0;
-        let isDragging = false;
-        let currentFocusSide = "none"; 
+        const deckCard = document.getElementById('presentationPage');
+        const frontImg = document.getElementById('frontImg');
+        const backImg = document.getElementById('backImg');
+        const frontCounter = document.getElementById('frontPageCount');
+        const backCounter = document.getElementById('backPageCount');
 
-        function updateInstructions() {
-            if (window.innerWidth <= 768) {
-                instructionNote.innerText = "(Mobile) Tap to Focus Page | Tap Again to Flip | Drag to Pan";
-            } else {
-                instructionNote.innerText = "(Desktop) Click Left / Right sides to flip pages";
-            }
-        }
+        let currentPageIndex = 0;
+        let isAnimating = false;
 
-        // FIXED: Re-calculated 3D stacking mathematics for the inverted rotation plane
-        function updateZIndices() {
-            leaves.forEach((leaf, i) => {
-                if (i <= turnIndex) {
-                    // LEFT SIDE PAGES: As 'i' goes up, it must sit closer to the user.
-                    const leftZ = i + 1;
-                    leaf.style.zIndex = leftZ;
-                    
-                    // Because rotateY(-180deg) flips the local Z-axis inward, positive steps push elements deeper.
-                    // (turnIndex - i) ensures the active turned page remains at 0px depth, while pages underneath are buried deeper.
-                    const leftDepth = (turnIndex - i) * 0.1;
-                    leaf.style.transform = `rotateY(-180deg) translateZ(${leftDepth}px)`;
-                    leaf.style.webkitTransform = `rotateY(-180deg) translateZ(${leftDepth}px)`;
-                } else {
-                    // RIGHT SIDE PAGES: As 'i' goes up, it drops deeper into the background stack.
-                    const rightZ = leaves.length - i;
-                    leaf.style.zIndex = rightZ;
-                    
-                    // Standard flat layout plane: positive translateZ pulls elements closer to the screen viewer.
-                    leaf.style.transform = `rotateY(0deg) translateZ(${rightZ * 0.1}px)`;
-                    leaf.style.webkitTransform = `rotateY(0deg) translateZ(${rightZ * 0.1}px)`;
-                }
-            });
-        }
+        deckCard.addEventListener('click', () => {
+            // Guard lock structure to block execution overlap
+            if (isAnimating) return;
+            isAnimating = true;
 
-        function getBaseChassisTranslation() {
-            if (window.innerWidth > 768) return 0;
+            // Continuous loop index calculations
+            const nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+            const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
 
-            if (turnIndex === -1) {
-                return parseFloat(window.innerWidth * -0.46); 
-            } else if (turnIndex === leaves.length - 1) {
-                return parseFloat(window.innerWidth * 0.46);  
-            } else {
-                if (currentFocusSide === "right") {
-                    return parseFloat(window.innerWidth * -0.46); 
-                } else if (currentFocusSide === "left") {
-                    return parseFloat(window.innerWidth * 0.46);  
-                }
-                return 0; 
-            }
-        }
+            // Load upcoming layout configuration onto the hidden reverse panel template
+            backImg.src = pageImages[nextPageIndex];
+            backCounter.innerText = nextPageIndex;
 
-        function updateChassisTransform(additionalOffset = 0) {
-            if (window.innerWidth > 768) return;
-            const baseValue = getBaseChassisTranslation();
-            const totalX = baseValue + additionalOffset;
-            
-            chassis.style.transform = `translateX(${totalX}px)`;
-            chassis.style.webkitTransform = `translateX(${totalX}px)`;
-        }
+            // Execute center-axis deck spin transition rotation configuration
+            deckCard.style.transform = 'rotateY(-180deg)';
 
-        function handleNavigationInteraction(clientX) {
-            if (isDragging && Math.abs(currentPanOffset) > 10) return;
+            // Cleanly swap out presentation layers at the 90-degree inversion point
+            setTimeout(() => {
+                // Sync front view layer contents instantly to reflect active index updates
+                frontImg.src = pageImages[nextPageIndex];
+                frontCounter.innerText = nextPageIndex;
+                
+                // Drop transitions briefly to return the card coordinate system back to base invisibly
+                deckCard.style.transition = 'none';
+                deckCard.style.transform = 'rotateY(0deg)';
+                
+                // Force layout hardware refresh cycle run processing validation checks
+                deckCard.offsetHeight; 
+                
+                // Restore standard animation styles
+                deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+                currentPageIndex = nextPageIndex;
+                isAnimating = false;
 
-            const viewportW = window.innerWidth;
-            const targetRight = clientX > (viewportW / 2);
-            const selectedSide = targetRight ? "right" : "left";
-
-            if (window.innerWidth <= 768) {
-                if (turnIndex !== -1 && turnIndex !== leaves.length - 1) {
-                    if (currentFocusSide !== selectedSide) {
-                        currentFocusSide = selectedSide;
-                        chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
-                        chassis.style.webkitTransition = '-webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
-                        updateChassisTransform();
-                        return; 
-                    }
-                }
-            }
-
-            if (selectedSide === "right") {
-                currentFocusSide = "right";
-                for (let i = 0; i < leaves.length; i++) {
-                    if (!leaves[i].classList.contains('turned')) {
-                        leaves[i].classList.add('turned');
-                        turnIndex = i;
-                        break;
-                    }
-                }
-            } else {
-                currentFocusSide = "left";
-                for (let i = leaves.length - 1; i >= 0; i--) {
-                    if (leaves[i].classList.contains('turned')) {
-                        leaves[i].classList.remove('turned');
-                        turnIndex = i - 1;
-                        break;
-                    }
-                }
-            }
-            updateZIndices();
-            chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
-            chassis.style.webkitTransition = '-webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
-            updateChassisTransform();
-        }
-
-        window.addEventListener('click', (e) => {
-            if (window.innerWidth <= 768) return; 
-            handleNavigationInteraction(e.clientX);
+                // Preloader task to dynamically pre-fetch subsequent images asynchronously
+                const nextImageCache = new Image();
+                nextImageCache.src = pageImages[prefetchIndex];
+            }, 700); // Perfectly synced with the 700ms duration utility transitions
         });
-
-        window.addEventListener('touchstart', (e) => {
-            if (window.innerWidth <= 768) {
-                touchStartX = e.touches[0].clientX;
-                chassis.style.transition = 'none'; 
-                chassis.style.webkitTransition = 'none';
-                isDragging = true;
-            }
-        }, { passive: true });
-
-        window.addEventListener('touchmove', (e) => {
-            if (!isDragging || window.innerWidth > 768) return;
-
-            const currentX = e.touches[0].clientX;
-            currentPanOffset = currentX - touchStartX;
-
-            const maxPan = window.innerWidth * 0.5;
-            if (currentPanOffset > maxPan) currentPanOffset = maxPan;
-            if (currentPanOffset < -maxPan) currentPanOffset = -maxPan;
-
-            updateChassisTransform(currentPanOffset);
-        }, { passive: true });
-
-        window.addEventListener('touchend', (e) => {
-            if (!isDragging) return;
-            
-            chassis.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
-            chassis.style.webkitTransition = '-webkit-transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
-            
-            const finalOffset = currentPanOffset;
-            
-            if (finalOffset > 40) {
-                currentFocusSide = "left";
-            } else if (finalOffset < -40) {
-                currentFocusSide = "right";
-            }
-
-            currentPanOffset = 0;
-            updateChassisTransform();
-
-            setTimeout(() => { isDragging = false; }, 50);
-
-            if (Math.abs(finalOffset) < 7) {
-                if (e.changedTouches && e.changedTouches.length > 0) {
-                    handleNavigationInteraction(e.changedTouches[0].clientX);
-                }
-            }
-        });
-
-        document.body.addEventListener('mousemove', (e) => {
-            if (window.innerWidth > 768) {
-                const tiltY = (window.innerWidth / 2 - e.pageX) / 50;
-                const tiltX = (window.innerHeight / 2 - e.pageY) / 50;
-                chassis.style.transform = `rotateY(${-tiltY}deg) rotateX(${tiltX}deg)`;
-                chassis.style.webkitTransform = `rotateY(${-tiltY}deg) rotateX(${tiltX}deg)`;
-            }
-        }, { passive: true });
-
-        window.addEventListener('resize', () => {
-            chassis.style.transition = '';
-            chassis.style.webkitTransition = '';
-            chassis.style.transform = '';
-            chassis.style.webkitTransform = '';
-            updateZIndices();
-            updateChassisTransform();
-            updateInstructions();
-        });
-
-        updateZIndices();
-        updateChassisTransform();
-        updateInstructions();
     </script>
 </body>
 
