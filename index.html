@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
     <title>LUMORA</title>
     <style>
         :root {
@@ -36,6 +36,7 @@
 
         .scene {
             perspective: 2000px;
+            -webkit-perspective: 2000px; /* Safari iOS support fix */
             width: 100%;
             height: 100%;
             display: flex;
@@ -49,7 +50,9 @@
             width: calc(var(--page-w) * 2);
             height: var(--page-h);
             transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d; /* Safari iOS support fix */
             transition: transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            -webkit-transition: -webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
         .leaf {
@@ -59,9 +62,15 @@
             left: 50%;
             top: 0;
             transform-origin: left center;
+            -webkit-transform-origin: left center;
             transform-style: preserve-3d;
+            -webkit-transform-style: preserve-3d; /* Safari iOS support fix */
             transition: transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+            -webkit-transition: -webkit-transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
             cursor: pointer;
+            
+            /* Eliminates tap highlight box artifacts on mobile engines */
+            -webkit-tap-highlight-color: transparent; 
         }
 
         .page-side {
@@ -72,7 +81,7 @@
             left: 0;
             background: var(--page-bg);
             backface-visibility: hidden;
-            -webkit-backface-visibility: hidden;
+            -webkit-backface-visibility: hidden; /* Safari iOS support fix */
             overflow: hidden;
             box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.02);
             display: flex;
@@ -86,6 +95,7 @@
 
         .page-side.back {
             transform: rotateY(180deg);
+            -webkit-transform: rotateY(180deg);
             z-index: 1;
             border-radius: 1rem 0 0 1rem;
         }
@@ -98,8 +108,10 @@
             background: linear-gradient(to right, #fff 94%, var(--spine-shadow) 100%);
         }
 
+        /* Leaf turned styles optimized using 3D depth buffers to force explicit sorting layers */
         .leaf.turned {
             transform: rotateY(-180deg);
+            -webkit-transform: rotateY(-180deg);
         }
 
         .img-container {
@@ -134,12 +146,13 @@
             left: 15px;
         }
 
-        /* Sticky Bottom Navigation Instructions Note */
+        /* Floating Navigation Instructions Note */
         .nav-instructions {
             position: fixed;
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
+            -webkit-transform: translateX(-50%);
             background: rgba(15, 23, 42, 0.85);
             color: #f8fafc;
             padding: 10px 20px;
@@ -156,9 +169,7 @@
             transition: opacity 0.3s ease;
         }
 
-        /* ==========================================================
-           RESPONSIVE UPGRADES: PERFECT ASPECT RATIO SCALING ON MOBILE
-        ========================================================== */
+        /* Responsive configuration mappings */
         @media (max-width: 768px) {
             :root {
                 --page-w: 92vw;
@@ -174,13 +185,13 @@
 
             .scene {
                 perspective: 1500px;
-                /* margin-top: 250px; */
-                padding-top: 5rem;
-                align-items: start;
+                -webkit-perspective: 1500px;
+                align-items: center;
             }
 
             .book-chassis {
                 transform: translateX(calc(var(--page-w) / -2));
+                -webkit-transform: translateX(calc(var(--page-w) / -2));
             }
         }
     </style>
@@ -292,20 +303,10 @@
         const instructionNote = document.getElementById('instructionNote');
 
         let turnIndex = -1;
-
         let touchStartX = 0;
         let currentPanOffset = 0;
         let isDragging = false;
-        let clickedSide = "none"; 
         let currentFocusSide = "none"; 
-
-        // function updateInstructions() {
-        //     if (window.innerWidth <= 768) {
-        //         instructionNote.innerText = "(Mobile) Tap to Focus Page | Tap Again to Flip | Drag to Pan";
-        //     } else {
-        //         instructionNote.innerText = "(Desktop) Click Left / Right sides to flip pages";
-        //     }
-        // }
 
         function updateInstructions() {
             if (window.innerWidth <= 768) {
@@ -315,12 +316,29 @@
             }
         }
 
+        // Updated explicitly for iOS Safari: assigns physical Z translate offsets to guarantee layer rendering stability
         function updateZIndices() {
             leaves.forEach((leaf, i) => {
+                let calculatedZ = 0;
                 if (i <= turnIndex) {
-                    leaf.style.zIndex = i + 1;
+                    calculatedZ = i + 1;
                 } else {
-                    leaf.style.zIndex = leaves.length - i;
+                    calculatedZ = leaves.length - i;
+                }
+                
+                // Inject cross-browser support inline styles to force layering
+                leaf.style.zIndex = calculatedZ;
+                
+                // Apply subtle 3D translation offset layers to force strict iOS WebKit render sequence sorting
+                const currentTransform = leaf.style.transform || "";
+                const baseTransform = currentTransform.replace(/translateZ\([^)]+\)/g, "").trim();
+                
+                if (leaf.classList.contains('turned')) {
+                    leaf.style.transform = `rotateY(-180deg) translateZ(${calculatedZ * 0.1}px)`;
+                    leaf.style.webkitTransform = `rotateY(-180deg) translateZ(${calculatedZ * 0.1}px)`;
+                } else {
+                    leaf.style.transform = `rotateY(0deg) translateZ(${calculatedZ * 0.1}px)`;
+                    leaf.style.webkitTransform = `rotateY(0deg) translateZ(${calculatedZ * 0.1}px)`;
                 }
             });
         }
@@ -346,14 +364,17 @@
             if (window.innerWidth > 768) return;
             const baseValue = getBaseChassisTranslation();
             const totalX = baseValue + additionalOffset;
+            
             chassis.style.transform = `translateX(${totalX}px)`;
+            chassis.style.webkitTransform = `translateX(${totalX}px)`;
         }
 
-        window.addEventListener('click', (e) => {
+        // Unified click/tap execution matrix routing handler
+        function handleNavigationInteraction(clientX) {
             if (isDragging && Math.abs(currentPanOffset) > 10) return;
 
             const viewportW = window.innerWidth;
-            const targetRight = e.clientX > (viewportW / 2);
+            const targetRight = clientX > (viewportW / 2);
             const selectedSide = targetRight ? "right" : "left";
 
             // Mobile-Only Focus Loop Interceptor Logic Layer
@@ -362,13 +383,14 @@
                     if (currentFocusSide !== selectedSide) {
                         currentFocusSide = selectedSide;
                         chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                        chassis.style.webkitTransition = '-webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
                         updateChassisTransform();
                         return; 
                     }
                 }
             }
 
-            // Normal Turning Execution Rules Layer
+            // Turning Logic Actions Execution Layer
             if (selectedSide === "right") {
                 currentFocusSide = "right";
                 for (let i = 0; i < leaves.length; i++) {
@@ -390,13 +412,23 @@
             }
             updateZIndices();
             chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+            chassis.style.webkitTransition = '-webkit-transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
             updateChassisTransform();
+        }
+
+        // Handle standard tap events on mouse viewports
+        window.addEventListener('click', (e) => {
+            // Prevent execution if triggered by mobile touch emulation events
+            if (window.innerWidth <= 768) return; 
+            handleNavigationInteraction(e.clientX);
         });
 
+        // Touch Interaction Handlers explicitly calibrated to intercept iPhone Safari cycles
         window.addEventListener('touchstart', (e) => {
             if (window.innerWidth <= 768) {
                 touchStartX = e.touches[0].clientX;
                 chassis.style.transition = 'none'; 
+                chassis.style.webkitTransition = 'none';
                 isDragging = true;
             }
         }, { passive: true });
@@ -414,15 +446,18 @@
             updateChassisTransform(currentPanOffset);
         }, { passive: true });
 
-        window.addEventListener('touchend', () => {
+        window.addEventListener('touchend', (e) => {
             if (!isDragging) return;
             
             chassis.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+            chassis.style.webkitTransition = '-webkit-transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+            
+            const finalOffset = currentPanOffset;
             
             // Adjust current focus state index mapping if manual drag passes critical shift criteria limits
-            if (currentPanOffset > 40) {
+            if (finalOffset > 40) {
                 currentFocusSide = "left";
-            } else if (currentPanOffset < -40) {
+            } else if (finalOffset < -40) {
                 currentFocusSide = "right";
             }
 
@@ -430,19 +465,30 @@
             updateChassisTransform();
 
             setTimeout(() => { isDragging = false; }, 50);
+
+            // If it was a quick tap instead of a definitive drag pan, route layout navigation directly
+            if (Math.abs(finalOffset) < 7) {
+                if (e.changedTouches && e.changedTouches.length > 0) {
+                    handleNavigationInteraction(e.changedTouches[0].clientX);
+                }
+            }
         });
 
+        // Desktop Pointer Parallax Tracking (Active only on wider desktop layouts)
         document.body.addEventListener('mousemove', (e) => {
             if (window.innerWidth > 768) {
                 const tiltY = (window.innerWidth / 2 - e.pageX) / 50;
                 const tiltX = (window.innerHeight / 2 - e.pageY) / 50;
                 chassis.style.transform = `rotateY(${-tiltY}deg) rotateX(${tiltX}deg)`;
+                chassis.style.webkitTransform = `rotateY(${-tiltY}deg) rotateX(${tiltX}deg)`;
             }
         }, { passive: true });
 
         window.addEventListener('resize', () => {
             chassis.style.transition = '';
+            chassis.style.webkitTransition = '';
             chassis.style.transform = '';
+            chassis.style.webkitTransform = '';
             updateZIndices();
             updateChassisTransform();
             updateInstructions();
