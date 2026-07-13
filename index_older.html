@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <title>LUMORA - Deck Presentation View</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Essential 3D Deck Flip Custom Matrix Utilities */
+        .perspective-2000 {
+            perspective: 2000px;
+        }
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+        .backface-hidden {
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+        .rotate-y-180 {
+            transform: rotateY(180deg);
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 w-screen h-screen flex items-center justify-center overflow-hidden select-none antialiased">
+
+    <div class="w-full h-full p-4 sm:p-6 md:p-8 flex items-center justify-center">
+        
+        <div class="perspective-2000 w-full h-full flex items-center justify-center relative">
+            
+            <div id="presentationPage" class="preserve-3d relative w-full h-full max-w-full max-h-full aspect-[456.875/645.625] cursor-pointer transition-transform duration-700 ease-out shadow-2xl rounded-2xl origin-center">
+                
+                <div class="backface-hidden absolute inset-0 bg-slate-950 rounded-2xl overflow-hidden flex flex-col border border-slate-700/30 z-10">
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="frontImg" src="page_pictures/PDF LUMORA-01.webp" alt="Active Page Image" class="w-full h-full object-contain pointer-events-none">
+                    </div>
+                    <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/5">
+                        Page <span id="frontPageCount">0</span>
+                    </div>
+                </div>
+
+                <div class="backface-hidden rotate-y-180 absolute inset-0 bg-slate-950 rounded-2xl overflow-hidden flex flex-col border border-slate-700/30">
+                    <div class="w-full h-full flex items-center justify-center">
+                        <img id="backImg" src="page_pictures/PDF LUMORA-02.webp" alt="Next Page Buffer" class="w-full h-full object-contain pointer-events-none">
+                    </div>
+                    <div class="absolute bottom-4 left-4 font-bold text-xs text-slate-400 bg-slate-900/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/5">
+                        Page <span id="backPageCount">1</span>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950/80 text-slate-200 text-xs md:text-sm font-medium tracking-wide px-6 py-3 rounded-full pointer-events-none z-50 shadow-xl border border-white/10 backdrop-blur-md transition-opacity duration-1000 ease-in-out">
+         Swipe left or right on the card to flip to the next page
+    </div>
+
+    <script>
+        // Array Catalog Map representing your production layout design slides
+        const pageImages = [
+            "page_pictures/PDF LUMORA-01.webp", "page_pictures/PDF LUMORA-02.webp",
+            "page_pictures/PDF LUMORA-03.webp", "page_pictures/PDF LUMORA-04.webp",
+            "page_pictures/PDF LUMORA-05.webp", "page_pictures/PDF LUMORA-06.webp",
+            "page_pictures/PDF LUMORA-07.webp", "page_pictures/PDF LUMORA-08.webp",
+            "page_pictures/PDF LUMORA-09.webp", "page_pictures/PDF LUMORA-10.webp",
+            "page_pictures/PDF LUMORA-11.webp", "page_pictures/PDF LUMORA-12.webp",
+            "page_pictures/PDF LUMORA-13.webp", "page_pictures/PDF LUMORA-14.webp",
+            "page_pictures/PDF LUMORA-15.webp", "page_pictures/PDF LUMORA-16.webp",
+            "page_pictures/PDF LUMORA-17.webp", "page_pictures/PDF LUMORA-18.webp",
+            "page_pictures/PDF LUMORA-19.webp", "page_pictures/PDF LUMORA-20.webp",
+            "page_pictures/PDF LUMORA-21.webp", "page_pictures/PDF LUMORA-22.webp",
+            "page_pictures/PDF LUMORA-23.webp", "page_pictures/PDF LUMORA-24.webp",
+            "page_pictures/PDF LUMORA-25.webp", "page_pictures/PDF LUMORA-26.webp",
+            "page_pictures/PDF LUMORA-27.webp", "page_pictures/PDF LUMORA-28.webp",
+            "page_pictures/PDF LUMORA-29.webp"
+        ];
+
+        const deckCard = document.getElementById('presentationPage');
+        const frontImg = document.getElementById('frontImg');
+        const backImg = document.getElementById('backImg');
+        const frontCounter = document.getElementById('frontPageCount');
+        const backCounter = document.getElementById('backPageCount');
+
+
+        let currentPageIndex = 0;
+        let isAnimating = false;
+        
+        // Touch geometry and velocity tracking coordinates
+        let dragStartX = 0;
+        let dragStartTime = 0; 
+        
+        const dragMinDistance = 60;   // Minimum pixel distance required to count as a swipe
+        const dragMinVelocity = 0.45; // Minimum velocity required (pixels per millisecond)
+
+        // 🛠️ MOUSE & TOUCH DOWN INITIALIZATION
+        function handleDragStart(clientX) {
+            if (isAnimating) return;
+            dragStartX = clientX;
+            dragStartTime = performance.now(); // Track exactly when the touch starts
+
+            // Fade and dismiss the overlay toast message on initial successful gesture interaction
+            const toastMessage = document.getElementById('toastMessage');
+            if (toastMessage) {
+                toastMessage.classList.add('opacity-0');
+                setTimeout(() => toastMessage.remove(), 1000);
+            }
+        }
+
+        // 🏁 MOUSE & TOUCH RELEASE ACTION EVALUATION
+        function handleDragEnd(clientX) {
+            if (isAnimating || dragStartX === 0) return;
+            
+            const dragEndTime = performance.now();
+            const dragDistance = clientX - dragStartX;
+            const dragDuration = dragEndTime - dragStartTime; // Time taken in milliseconds
+            
+            // Calculate velocity: speed = distance / time
+            const dragVelocity = Math.abs(dragDistance) / dragDuration;
+
+            // Reset state tracking variables immediately
+            dragStartX = 0;
+
+            // 🛑 SAFETY FILTERS: Reject if distance is too short OR if it's a slow drag (possible zoom/pan intent)
+            if (Math.abs(dragDistance) < dragMinDistance || dragVelocity < dragMinVelocity) {
+                return; 
+            }
+
+            isAnimating = true;
+            let nextPageIndex;
+            let rotationAngle;
+
+            if (dragDistance < 0) {
+                // 👈 QUICK SWIPE LEFT = GO NEXT PAGE
+                nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+                rotationAngle = '-180deg';
+            } else {
+                // 👉 QUICK SWIPE RIGHT = GO PREVIOUS PAGE
+                nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+                rotationAngle = '180deg';
+            }
+
+            // Calculate prefetch index context for the next predictive step forward
+            const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+            // Load upcoming layout configuration onto the hidden reverse panel template
+            backImg.src = pageImages[nextPageIndex];
+            backCounter.innerText = nextPageIndex;
+
+            // Execute center-axis deck spin transition rotation configuration
+            deckCard.style.transform = `rotateY(${rotationAngle})`;
+
+            // Cleanly swap out presentation layers at the 90-degree inversion point
+            setTimeout(() => {
+                // Sync front view layer contents instantly to reflect active index updates
+                frontImg.src = pageImages[nextPageIndex]; frontCounter.innerText = nextPageIndex;
+                
+                // Drop transitions briefly to return the card coordinate system back to base invisibly
+                deckCard.style.transition = 'none';
+                deckCard.style.transform = 'rotateY(0deg)';
+                
+                // Force layout hardware refresh cycle run processing validation checks
+                deckCard.offsetHeight; 
+                
+                // Restore standard animation styles
+                deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+                currentPageIndex = nextPageIndex;
+                isAnimating = false;
+
+                // Preloader task to dynamically pre-fetch subsequent images asynchronously
+                const nextImageCache = new Image();
+                nextImageCache.src = pageImages[prefetchIndex];
+            }, 700); // Perfectly synced with the 700ms duration utility transitions
+
+            
+        }
+
+        // 📱 MOBILE TOUCH EVENT CAPTURING LISTENERS
+        deckCard.addEventListener('touchstart', (e) => {
+            handleDragStart(e.touches[0].clientX);
+        }, { passive: true });
+
+        deckCard.addEventListener('touchend', (e) => {
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                handleDragEnd(e.changedTouches[0].clientX);
+            }
+        }, { passive: true });
+
+        // 💻 DESKTOP COMPATIBILITY DRAG LISTENERS
+        deckCard.addEventListener('mousedown', (e) => {
+            handleDragStart(e.clientX);
+        });
+
+        deckCard.addEventListener('mouseup', (e) => {
+            handleDragEnd(e.clientX);
+        });
+
+        // Prevents ghost selection artifact drag highlights from disrupting image container calculations
+        deckCard.addEventListener('dragstart', (e) => e.preventDefault());
+
+        // let currentPageIndex = 0;
+        // let isAnimating = false;
+        
+        // // Touch geometry tracking coordinates
+        // let dragStartX = 0;
+        // let dragMinDistance = 50; // Minimum pixel distance required to trigger a page flip
+
+        // // 🛠️ MOUSE & TOUCH DOWN INITIALIZATION
+        // function handleDragStart(clientX) {
+        //     if (isAnimating) return;
+        //     dragStartX = clientX;
+        // }
+
+        // // 🏁 MOUSE & TOUCH RELEASE ACTION EVALUATION
+        // function handleDragEnd(clientX) {
+        //     if (isAnimating || dragStartX === 0) return;
+            
+        //     const dragDistance = clientX - dragStartX;
+        //     dragStartX = 0; // Reset state tracking variable immediately
+
+        //     // If the gesture swipe distance doesn't meet our minimum criteria limit, ignore it
+        //     if (Math.abs(dragDistance) < dragMinDistance) return;
+
+        //     isAnimating = true;
+        //     let nextPageIndex;
+        //     let rotationAngle;
+
+        //     if (dragDistance < 0) {
+        //         // 👈 SWIPE LEFT = GO NEXT PAGE
+        //         nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+        //         rotationAngle = '-180deg';
+        //     } else {
+        //         // 👉 SWIPE RIGHT = GO PREVIOUS PAGE
+        //         nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+        //         rotationAngle = '180deg';
+        //     }
+
+        //     // Calculate prefetch index context for the next predictive step forward
+        //     const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+        //     // Load upcoming layout configuration onto the hidden reverse panel template
+        //     backImg.src = pageImages[nextPageIndex];
+        //     backCounter.innerText = nextPageIndex;
+
+        //     // Execute center-axis deck spin transition rotation configuration
+        //     deckCard.style.transform = `rotateY(${rotationAngle})`;
+
+        //     // Cleanly swap out presentation layers at the 90-degree inversion point
+        //     setTimeout(() => {
+        //         // Sync front view layer contents instantly to reflect active index updates
+        //         frontImg.src = pageImages[nextPageIndex];
+        //         frontCounter.innerText = nextPageIndex;
+                
+        //         // Drop transitions briefly to return the card coordinate system back to base invisibly
+        //         deckCard.style.transition = 'none';
+        //         deckCard.style.transform = 'rotateY(0deg)';
+                
+        //         // Force layout hardware refresh cycle run processing validation checks
+        //         deckCard.offsetHeight; 
+                
+        //         // Restore standard animation styles
+        //         deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+        //         currentPageIndex = nextPageIndex;
+        //         isAnimating = false;
+
+        //         // Preloader task to dynamically pre-fetch subsequent images asynchronously
+        //         const nextImageCache = new Image();
+        //         nextImageCache.src = pageImages[prefetchIndex];
+        //     }, 700); // Perfectly synced with the 700ms duration utility transitions
+
+        //     // Fade and dismiss the overlay toast message on initial successful gesture interaction
+        //     const toastMessage = document.getElementById('toastMessage');
+        //     if (toastMessage) {
+        //         toastMessage.classList.add('opacity-0');
+        //         setTimeout(() => toastMessage.remove(), 1000);
+        //     }
+        // }
+
+        // // 📱 MOBILE TOUCH EVENT CAPTURING LISTENERS
+        // deckCard.addEventListener('touchstart', (e) => {
+        //     handleDragStart(e.touches[0].clientX);
+        // }, { passive: true });
+
+        // deckCard.addEventListener('touchend', (e) => {
+        //     if (e.changedTouches && e.changedTouches.length > 0) {
+        //         handleDragEnd(e.changedTouches[0].clientX);
+        //     }
+        // }, { passive: true });
+
+        // // 💻 DESKTOP COMPATIBILITY DRAG LISTENERS
+        // deckCard.addEventListener('mousedown', (e) => {
+        //     handleDragStart(e.clientX);
+        // });
+
+        // deckCard.addEventListener('mouseup', (e) => {
+        //     handleDragEnd(e.clientX);
+        // });
+
+        // // Prevents ghost selection artifact drag highlights from disrupting image container calculations
+        // deckCard.addEventListener('dragstart', (e) => e.preventDefault());
+
+        // let currentPageIndex = 0;
+        // let isAnimating = false;
+
+        // deckCard.addEventListener('click', (e) => {
+        //     // Guard lock structure to block execution overlap
+        //     if (isAnimating) return;
+        //     isAnimating = true;
+
+        //     // Determine click direction based on screen positioning
+        //     const viewportWidth = window.innerWidth;
+        //     const isClickRightSide = e.clientX > (viewportWidth / 2);
+
+        //     let nextPageIndex;
+        //     let rotationAngle;
+
+        //     if (isClickRightSide) {
+        //         // Next Page: Increment index (Loop forward to 0 if at the end)
+        //         nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+        //         // Spin clockwise/right-to-left
+        //         rotationAngle = '-180deg';
+        //     } else {
+        //         // Previous Page: Decrement index (Loop backward to last page if at 0)
+        //         nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+        //         // Spin counter-clockwise/left-to-right for visual direction matching
+        //         rotationAngle = '180deg';
+        //     }
+
+        //     // Calculate prefetch index for the next predictive step forward
+        //     const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+        //     // Load upcoming layout configuration onto the hidden reverse panel template
+        //     backImg.src = pageImages[nextPageIndex];
+        //     backCounter.innerText = nextPageIndex;
+
+        //     // Execute center-axis deck spin transition rotation configuration
+        //     deckCard.style.transform = `rotateY(${rotationAngle})`;
+
+        //     // Cleanly swap out presentation layers at the 90-degree inversion point
+        //     setTimeout(() => {
+        //         // Sync front view layer contents instantly to reflect active index updates
+        //         frontImg.src = pageImages[nextPageIndex];
+        //         frontCounter.innerText = nextPageIndex;
+                
+        //         // Drop transitions briefly to return the card coordinate system back to base invisibly
+        //         deckCard.style.transition = 'none';
+        //         deckCard.style.transform = 'rotateY(0deg)';
+                
+        //         // Force layout hardware refresh cycle run processing validation checks
+        //         deckCard.offsetHeight; 
+                
+        //         // Restore standard animation styles
+        //         deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+        //         currentPageIndex = nextPageIndex;
+        //         isAnimating = false;
+
+        //         // Preloader task to dynamically pre-fetch subsequent images asynchronously
+        //         const nextImageCache = new Image();
+        //         nextImageCache.src = pageImages[prefetchIndex];
+        //     }, 700); // Perfectly synced with the 700ms duration utility transitions
+
+        //     if (toastMessage) {
+        //         toastMessage.classList.add('opacity-0');
+        //         setTimeout(() => toastMessage.remove(), 1000);
+        //     }
+        // });
+
+        // Automatically fade out the instruction toast notification after a brief delay
+        const toastMessage = document.getElementById('toastMessage');
+
+        setTimeout(() => {
+            if (toastMessage) {
+                // Drop the opacity to 0 to let it fade out slowly
+                toastMessage.classList.add('opacity-0');
+                
+                // Optional: Remove it entirely from layout structure once the fade completes 
+                setTimeout(() => toastMessage.remove(), 1000);
+            }
+        }, 3500); // 3500ms = Delays the fade start for 3.5 seconds
+
+
+        // let currentPageIndex = 0;
+        // let isAnimating = false;
+
+        // deckCard.addEventListener('click', () => {
+        //     // Guard lock structure to block execution overlap
+        //     if (isAnimating) return;
+        //     isAnimating = true;
+
+        //     // Continuous loop index calculations
+        //     const nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+        //     const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+        //     // Load upcoming layout configuration onto the hidden reverse panel template
+        //     backImg.src = pageImages[nextPageIndex];
+        //     backCounter.innerText = nextPageIndex;
+
+        //     // Execute center-axis deck spin transition rotation configuration
+        //     deckCard.style.transform = 'rotateY(-180deg)';
+
+        //     // Cleanly swap out presentation layers at the 90-degree inversion point
+        //     setTimeout(() => {
+        //         // Sync front view layer contents instantly to reflect active index updates
+        //         frontImg.src = pageImages[nextPageIndex];
+        //         frontCounter.innerText = nextPageIndex;
+                
+        //         // Drop transitions briefly to return the card coordinate system back to base invisibly
+        //         deckCard.style.transition = 'none';
+        //         deckCard.style.transform = 'rotateY(0deg)';
+                
+        //         // Force layout hardware refresh cycle run processing validation checks
+        //         deckCard.offsetHeight; 
+                
+        //         // Restore standard animation styles
+        //         deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+        //         currentPageIndex = nextPageIndex;
+        //         isAnimating = false;
+
+        //         // Preloader task to dynamically pre-fetch subsequent images asynchronously
+        //         const nextImageCache = new Image();
+        //         nextImageCache.src = pageImages[prefetchIndex];
+        //     }, 700); // Perfectly synced with the 700ms duration utility transitions
+        // });
+    </script>
+</body>
+
+</html>
