@@ -85,39 +85,53 @@
         const frontCounter = document.getElementById('frontPageCount');
         const backCounter = document.getElementById('backPageCount');
 
-let currentPageIndex = 0;
+
+        let currentPageIndex = 0;
         let isAnimating = false;
         
-        // Touch geometry tracking coordinates
+        // Touch geometry and velocity tracking coordinates
         let dragStartX = 0;
-        let dragMinDistance = 50; // Minimum pixel distance required to trigger a page flip
+        let dragStartTime = 0; 
+        
+        const dragMinDistance = 60;   // Minimum pixel distance required to count as a swipe
+        const dragMinVelocity = 0.45; // Minimum velocity required (pixels per millisecond)
 
         // 🛠️ MOUSE & TOUCH DOWN INITIALIZATION
         function handleDragStart(clientX) {
             if (isAnimating) return;
             dragStartX = clientX;
+            dragStartTime = performance.now(); // Track exactly when the touch starts
         }
 
         // 🏁 MOUSE & TOUCH RELEASE ACTION EVALUATION
         function handleDragEnd(clientX) {
             if (isAnimating || dragStartX === 0) return;
             
+            const dragEndTime = performance.now();
             const dragDistance = clientX - dragStartX;
-            dragStartX = 0; // Reset state tracking variable immediately
+            const dragDuration = dragEndTime - dragStartTime; // Time taken in milliseconds
+            
+            // Calculate velocity: speed = distance / time
+            const dragVelocity = Math.abs(dragDistance) / dragDuration;
 
-            // If the gesture swipe distance doesn't meet our minimum criteria limit, ignore it
-            if (Math.abs(dragDistance) < dragMinDistance) return;
+            // Reset state tracking variables immediately
+            dragStartX = 0;
+
+            // 🛑 SAFETY FILTERS: Reject if distance is too short OR if it's a slow drag (possible zoom/pan intent)
+            if (Math.abs(dragDistance) < dragMinDistance || dragVelocity < dragMinVelocity) {
+                return; 
+            }
 
             isAnimating = true;
             let nextPageIndex;
             let rotationAngle;
 
             if (dragDistance < 0) {
-                // 👈 SWIPE LEFT = GO NEXT PAGE
+                // 👈 QUICK SWIPE LEFT = GO NEXT PAGE
                 nextPageIndex = (currentPageIndex + 1) % pageImages.length;
                 rotationAngle = '-180deg';
             } else {
-                // 👉 SWIPE RIGHT = GO PREVIOUS PAGE
+                // 👉 QUICK SWIPE RIGHT = GO PREVIOUS PAGE
                 nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
                 rotationAngle = '180deg';
             }
@@ -135,8 +149,7 @@ let currentPageIndex = 0;
             // Cleanly swap out presentation layers at the 90-degree inversion point
             setTimeout(() => {
                 // Sync front view layer contents instantly to reflect active index updates
-                frontImg.src = pageImages[nextPageIndex];
-                frontCounter.innerText = nextPageIndex;
+                frontImg.src = pageImages[nextPageIndex]; frontCounter.innerText = nextPageIndex;
                 
                 // Drop transitions briefly to return the card coordinate system back to base invisibly
                 deckCard.style.transition = 'none';
@@ -186,6 +199,108 @@ let currentPageIndex = 0;
 
         // Prevents ghost selection artifact drag highlights from disrupting image container calculations
         deckCard.addEventListener('dragstart', (e) => e.preventDefault());
+
+        // let currentPageIndex = 0;
+        // let isAnimating = false;
+        
+        // // Touch geometry tracking coordinates
+        // let dragStartX = 0;
+        // let dragMinDistance = 50; // Minimum pixel distance required to trigger a page flip
+
+        // // 🛠️ MOUSE & TOUCH DOWN INITIALIZATION
+        // function handleDragStart(clientX) {
+        //     if (isAnimating) return;
+        //     dragStartX = clientX;
+        // }
+
+        // // 🏁 MOUSE & TOUCH RELEASE ACTION EVALUATION
+        // function handleDragEnd(clientX) {
+        //     if (isAnimating || dragStartX === 0) return;
+            
+        //     const dragDistance = clientX - dragStartX;
+        //     dragStartX = 0; // Reset state tracking variable immediately
+
+        //     // If the gesture swipe distance doesn't meet our minimum criteria limit, ignore it
+        //     if (Math.abs(dragDistance) < dragMinDistance) return;
+
+        //     isAnimating = true;
+        //     let nextPageIndex;
+        //     let rotationAngle;
+
+        //     if (dragDistance < 0) {
+        //         // 👈 SWIPE LEFT = GO NEXT PAGE
+        //         nextPageIndex = (currentPageIndex + 1) % pageImages.length;
+        //         rotationAngle = '-180deg';
+        //     } else {
+        //         // 👉 SWIPE RIGHT = GO PREVIOUS PAGE
+        //         nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+        //         rotationAngle = '180deg';
+        //     }
+
+        //     // Calculate prefetch index context for the next predictive step forward
+        //     const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
+
+        //     // Load upcoming layout configuration onto the hidden reverse panel template
+        //     backImg.src = pageImages[nextPageIndex];
+        //     backCounter.innerText = nextPageIndex;
+
+        //     // Execute center-axis deck spin transition rotation configuration
+        //     deckCard.style.transform = `rotateY(${rotationAngle})`;
+
+        //     // Cleanly swap out presentation layers at the 90-degree inversion point
+        //     setTimeout(() => {
+        //         // Sync front view layer contents instantly to reflect active index updates
+        //         frontImg.src = pageImages[nextPageIndex];
+        //         frontCounter.innerText = nextPageIndex;
+                
+        //         // Drop transitions briefly to return the card coordinate system back to base invisibly
+        //         deckCard.style.transition = 'none';
+        //         deckCard.style.transform = 'rotateY(0deg)';
+                
+        //         // Force layout hardware refresh cycle run processing validation checks
+        //         deckCard.offsetHeight; 
+                
+        //         // Restore standard animation styles
+        //         deckCard.style.transition = 'transform 0.7s cubic-bezier(0.25, 1, 0.5, 1)';
+                
+        //         currentPageIndex = nextPageIndex;
+        //         isAnimating = false;
+
+        //         // Preloader task to dynamically pre-fetch subsequent images asynchronously
+        //         const nextImageCache = new Image();
+        //         nextImageCache.src = pageImages[prefetchIndex];
+        //     }, 700); // Perfectly synced with the 700ms duration utility transitions
+
+        //     // Fade and dismiss the overlay toast message on initial successful gesture interaction
+        //     const toastMessage = document.getElementById('toastMessage');
+        //     if (toastMessage) {
+        //         toastMessage.classList.add('opacity-0');
+        //         setTimeout(() => toastMessage.remove(), 1000);
+        //     }
+        // }
+
+        // // 📱 MOBILE TOUCH EVENT CAPTURING LISTENERS
+        // deckCard.addEventListener('touchstart', (e) => {
+        //     handleDragStart(e.touches[0].clientX);
+        // }, { passive: true });
+
+        // deckCard.addEventListener('touchend', (e) => {
+        //     if (e.changedTouches && e.changedTouches.length > 0) {
+        //         handleDragEnd(e.changedTouches[0].clientX);
+        //     }
+        // }, { passive: true });
+
+        // // 💻 DESKTOP COMPATIBILITY DRAG LISTENERS
+        // deckCard.addEventListener('mousedown', (e) => {
+        //     handleDragStart(e.clientX);
+        // });
+
+        // deckCard.addEventListener('mouseup', (e) => {
+        //     handleDragEnd(e.clientX);
+        // });
+
+        // // Prevents ghost selection artifact drag highlights from disrupting image container calculations
+        // deckCard.addEventListener('dragstart', (e) => e.preventDefault());
 
         // let currentPageIndex = 0;
         // let isAnimating = false;
