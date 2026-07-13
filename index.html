@@ -114,7 +114,7 @@
         .img-container img {
             width: 100%;
             height: 100%;
-            object-fit: cover; /* Changed to cover to completely fill the perfectly proportioned page box */
+            object-fit: cover;
             display: block;
         }
 
@@ -134,18 +134,37 @@
             left: 15px;
         }
 
+        /* Sticky Bottom Navigation Instructions Note */
+        .nav-instructions {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(15, 23, 42, 0.85);
+            color: #f8fafc;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            white-space: nowrap;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            transition: opacity 0.3s ease;
+        }
+
         /* ==========================================================
            RESPONSIVE UPGRADES: PERFECT ASPECT RATIO SCALING ON MOBILE
         ========================================================== */
         @media (max-width: 768px) {
             :root {
-                /* Set width to fill the screen width */
                 --page-w: 92vw;
-                /* Dynamically calculates exact target height to scale according to the images' print aspect ratio (645.625 / 456.875 = 1.413) */
                 --page-h: calc(92vw * 1.413);
             }
 
-            /* Max safety constraint check: protects tall layouts from cutting off on exceptionally short screen viewports */
             @media (max-height: 680px) {
                 :root {
                     --page-h: 78vh;
@@ -262,17 +281,36 @@
         </div>
     </div>
 
+    <div class="nav-instructions" id="instructionNote">Click Left/Right sides to flip pages</div>
+
     <script>
         const chassis = document.getElementById('bookObject');
         const leaves = Array.from(document.querySelectorAll('.leaf'));
+        const instructionNote = document.getElementById('instructionNote');
 
         let turnIndex = -1;
 
-        // Touch Tracking State Management variables
         let touchStartX = 0;
         let currentPanOffset = 0;
         let isDragging = false;
         let clickedSide = "none"; 
+        let currentFocusSide = "none"; 
+
+        // function updateInstructions() {
+        //     if (window.innerWidth <= 768) {
+        //         instructionNote.innerText = "(Mobile) Tap to Focus Page | Tap Again to Flip | Drag to Pan";
+        //     } else {
+        //         instructionNote.innerText = "(Desktop) Click Left / Right sides to flip pages";
+        //     }
+        // }
+
+        function updateInstructions() {
+            if (window.innerWidth <= 768) {
+                instructionNote.innerText = "(Mobile) Tap to Focus Page | Tap Again to Flip | Drag to Pan";
+            } else {
+                instructionNote.innerText = "(Desktop) Click Left / Right sides to flip pages";
+            }
+        }
 
         function updateZIndices() {
             leaves.forEach((leaf, i) => {
@@ -292,9 +330,9 @@
             } else if (turnIndex === leaves.length - 1) {
                 return parseFloat(window.innerWidth * 0.46);  
             } else {
-                if (clickedSide === "right") {
+                if (currentFocusSide === "right") {
                     return parseFloat(window.innerWidth * -0.46); 
-                } else if (clickedSide === "left") {
+                } else if (currentFocusSide === "left") {
                     return parseFloat(window.innerWidth * 0.46);  
                 }
                 return 0; 
@@ -313,9 +351,23 @@
 
             const viewportW = window.innerWidth;
             const targetRight = e.clientX > (viewportW / 2);
+            const selectedSide = targetRight ? "right" : "left";
 
-            if (targetRight) {
-                clickedSide = "right";
+            // Mobile-Only Focus Loop Interceptor Logic Layer
+            if (window.innerWidth <= 768) {
+                if (turnIndex !== -1 && turnIndex !== leaves.length - 1) {
+                    if (currentFocusSide !== selectedSide) {
+                        currentFocusSide = selectedSide;
+                        chassis.style.transition = 'transform 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+                        updateChassisTransform();
+                        return; 
+                    }
+                }
+            }
+
+            // Normal Turning Execution Rules Layer
+            if (selectedSide === "right") {
+                currentFocusSide = "right";
                 for (let i = 0; i < leaves.length; i++) {
                     if (!leaves[i].classList.contains('turned')) {
                         leaves[i].classList.add('turned');
@@ -324,7 +376,7 @@
                     }
                 }
             } else {
-                clickedSide = "left";
+                currentFocusSide = "left";
                 for (let i = leaves.length - 1; i >= 0; i--) {
                     if (leaves[i].classList.contains('turned')) {
                         leaves[i].classList.remove('turned');
@@ -363,6 +415,14 @@
             if (!isDragging) return;
             
             chassis.style.transition = 'transform 0.4s cubic-bezier(0.25, 1, 0.5, 1)';
+            
+            // Adjust current focus state index mapping if manual drag passes critical shift criteria limits
+            if (currentPanOffset > 40) {
+                currentFocusSide = "left";
+            } else if (currentPanOffset < -40) {
+                currentFocusSide = "right";
+            }
+
             currentPanOffset = 0;
             updateChassisTransform();
 
@@ -382,10 +442,13 @@
             chassis.style.transform = '';
             updateZIndices();
             updateChassisTransform();
+            updateInstructions();
         });
 
+        // Run Initial Setup Cycles on compilation execution
         updateZIndices();
         updateChassisTransform();
+        updateInstructions();
     </script>
 </body>
 
