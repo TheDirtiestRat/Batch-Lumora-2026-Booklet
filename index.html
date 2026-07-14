@@ -4,16 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
-    <title>LUMORA - 3D Deck Swipe View</title>
+    <title>LUMORA - 3D Card Stack View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         /* Setup the 3D viewing container perspective */
         .perspective-2000 {
             perspective: 2000px;
         }
-        /* Smooth fallback timing for spring-back transitions */
-        .spring-transition {
-            transition: transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        .preserve-3d {
+            transform-style: preserve-3d;
+        }
+        /* Smooth transitions for changing stack layer placements */
+        .stack-transition {
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.5s ease;
         }
     </style>
 </head>
@@ -24,14 +27,39 @@
         
         <div class="perspective-2000 w-full h-full flex items-center justify-center relative">
             
-            <div id="presentationPage" class="spring-transition relative w-full h-full max-w-full max-h-full aspect-[456.875/645.625] cursor-grab active:cursor-grabbing shadow-2xl rounded-2xl border border-slate-700/30 bg-slate-950 overflow-hidden flex flex-col">
+            <div id="cardStack" class="preserve-3d relative w-full h-full flex items-center justify-center">
                 
-                <div class="w-full h-full flex items-center justify-center">
-                    <img id="frontImg" src="page_pictures/PDF LUMORA-01.webp" alt="Active Page Image" class="w-full h-full object-contain pointer-events-none">
+                <div id="cardTop" class="card stack-transition absolute w-full h-full cursor-grab active:cursor-grabbing flex flex-col bg-transparent">
+                    <div class="relative w-full h-full flex items-center justify-center">
+                        <div id="topWrapper" class="relative max-w-full max-h-full aspect-[456.875/645.625] h-auto md:h-full rounded-2xl overflow-hidden shadow-2xl border border-slate-700/20">
+                            <img id="topImg" src="page_pictures/PDF LUMORA-01.webp" alt="Top Slide Layer" class="w-full h-full object-contain pointer-events-none rounded-2xl">
+                            <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/75 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-lg">
+                                Page <span id="topCounter">0</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/60 px-2.5 py-1 rounded-md backdrop-blur-md border border-white/5">
-                    Page <span id="frontPageCount">0</span>
+
+                <div id="cardMiddle" class="card stack-transition absolute w-full h-full flex flex-col bg-transparent">
+                    <div class="relative w-full h-full flex items-center justify-center">
+                        <div class="relative max-w-full max-h-full aspect-[456.875/645.625] h-auto md:h-full rounded-2xl overflow-hidden shadow-xl border border-slate-700/20">
+                            <img id="middleImg" src="page_pictures/PDF LUMORA-02.webp" alt="Middle Slide Layer" class="w-full h-full object-contain pointer-events-none rounded-2xl">
+                            <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/75 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-lg">
+                                Page <span id="middleCounter">1</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cardBottom" class="card stack-transition absolute w-full h-full flex flex-col bg-transparent">
+                    <div class="relative w-full h-full flex items-center justify-center">
+                        <div class="relative max-w-full max-h-full aspect-[456.875/645.625] h-auto md:h-full rounded-2xl overflow-hidden shadow-lg border border-slate-700/20">
+                            <img id="bottomImg" src="page_pictures/PDF LUMORA-03.webp" alt="Bottom Slide Layer" class="w-full h-full object-contain pointer-events-none rounded-2xl">
+                            <div class="absolute bottom-4 right-4 font-bold text-xs text-slate-400 bg-slate-900/75 px-3 py-1.5 rounded-xl backdrop-blur-md border border-white/10 shadow-lg">
+                                Page <span id="bottomCounter">2</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -40,7 +68,7 @@
     </div>
 
     <div id="toastMessage" class="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-950/80 text-slate-200 text-xs md:text-sm font-medium tracking-wide px-6 py-3 rounded-full pointer-events-none z-50 shadow-xl border border-white/10 backdrop-blur-md transition-opacity duration-1000 ease-in-out">
-         Swipe left or right on the card to flip through pages
+         Swipe left or right on the card to flip through the deck stack
     </div>
 
     <script>
@@ -62,16 +90,25 @@
             "page_pictures/PDF LUMORA-29.webp"
         ];
 
-        const deckCard = document.getElementById('presentationPage');
-        const frontImg = document.getElementById('frontImg');
-        const frontCounter = document.getElementById('frontPageCount');
+        const stackContainer = document.getElementById('cardStack');
+        const cardTop = document.getElementById('cardTop');
+        const topWrapper = document.getElementById('topWrapper');
+        const cardMiddle = document.getElementById('cardMiddle');
+        const cardBottom = document.getElementById('cardBottom');
+
+        const topImg = document.getElementById('topImg');
+        const middleImg = document.getElementById('middleImg');
+        const bottomImg = document.getElementById('bottomImg');
+
+        const topCounter = document.getElementById('topCounter');
+        const middleCounter = document.getElementById('middleCounter');
+        const bottomCounter = document.getElementById('bottomCounter');
 
         let currentPageIndex = 0;
         let isAnimating = false;
         let isDragging = false;
-        let isMultiTouchDetected = false; // Flag to prevent triggering flip if user used multiple fingers
+        let isMultiTouchDetected = false;
         
-        // Tracking metrics
         let dragStartX = 0;
         let dragStartY = 0;
         let dragStartTime = 0; 
@@ -79,19 +116,43 @@
         const dragMinDistance = 60;   
         const dragMinVelocity = 0.45; 
 
-        // 🛠️ DRAG/SWIPE INITIALIZATION
+        function renderStackPositions(forceInstant = false) {
+            if (forceInstant) {
+                cardTop.style.transition = 'none';
+                cardMiddle.style.transition = 'none';
+                cardBottom.style.transition = 'none';
+            }
+
+            // Top Card Setup
+            cardTop.style.transform = `translate3d(0, 0px, 0px) rotateX(4deg) rotateY(-2deg) rotateZ(0deg) scale(1)`;
+            cardTop.style.zIndex = '30';
+            cardTop.style.opacity = '1';
+            cardTop.style.pointerEvents = 'auto';
+
+            // Middle Card Setup
+            cardMiddle.style.transform = `translate3d(0, 14px, -50px) rotateX(4deg) rotateY(-2deg) rotateZ(-0.7deg) scale(0.96)`;
+            cardMiddle.style.zIndex = '20';
+            cardMiddle.style.opacity = '1';
+            cardMiddle.style.pointerEvents = 'none';
+
+            // Bottom Card Setup
+            cardBottom.style.transform = `translate3d(0, 28px, -100px) rotateX(4deg) rotateY(-2deg) rotateZ(1deg) scale(0.92)`;
+            cardBottom.style.zIndex = '10';
+            cardBottom.style.opacity = '1';
+            cardBottom.style.pointerEvents = 'none';
+        }
+
         function handleDragStart(clientX, clientY) {
             if (isAnimating) return;
             isDragging = true;
-            isMultiTouchDetected = false; // Reset on new touch start
+            isMultiTouchDetected = false;
             dragStartX = clientX;
             dragStartY = clientY;
             dragStartTime = performance.now();
 
-            // Disable spring transition classes so the card responds instantly to the finger/cursor
-            deckCard.style.transition = 'none';
+            cardTop.style.transition = 'none';
+            handleDragMove(clientX, clientY);
 
-            // Fade toast instructions out
             const toastMessage = document.getElementById('toastMessage');
             if (toastMessage) {
                 toastMessage.classList.add('opacity-0');
@@ -99,33 +160,36 @@
             }
         }
 
-        // 🔄 REAL-TIME DRAG TRACKING WITH 3D TILT EFFECT
         function handleDragMove(clientX, clientY) {
             if (!isDragging || isAnimating || isMultiTouchDetected) return;
 
             const deltaX = clientX - dragStartX;
             const deltaY = clientY - dragStartY;
 
-            // Generate custom rotational coordinates based on displacement
-            const tiltY = (deltaX / window.innerWidth) * 45;  
-            const tiltX = -(deltaY / window.innerHeight) * 30; 
+            const rect = topWrapper.getBoundingClientRect();
+            const cardCenterX = rect.left + rect.width / 2;
+            const cardCenterY = rect.top + rect.height / 2;
 
-            // Live-render the 3D position state
-            deckCard.style.transform = `translate3d(${deltaX}px, ${deltaY * 0.2}px, 0) rotateX(${tiltX}deg) rotateY(${tiltY}deg)`;
+            const pressRelativeX = (clientX - cardCenterX) / (rect.width / 2);
+            const pressRelativeY = (clientY - cardCenterY) / (rect.height / 2);
+
+            const maxTiltAngle = 12; 
+            const tiltY = (deltaX / window.innerWidth) * 20 + (pressRelativeX * maxTiltAngle) - 2;
+            const tiltX = -(deltaY / window.innerHeight) * 12 - (pressRelativeY * maxTiltAngle) + 4;
+            const rotateZ = (deltaX / window.innerWidth) * 8 + (pressRelativeX * 2);
+
+            cardTop.style.transform = `translate3d(${deltaX}px, ${deltaY * 0.15}px, 40px) rotateX(${tiltX}deg) rotateY(${tiltY}deg) rotateZ(${rotateZ}deg)`;
         }
 
-        // 🛑 RESET TO CENTER STACK
         function resetCardPosition() {
-            deckCard.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-            deckCard.style.transform = 'translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg)';
+            cardTop.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+            renderStackPositions();
         }
 
-        // 🏁 EVALUATE SWIPE OUTCOME ON RELEASE
         function handleDragEnd(clientX, clientY) {
             if (!isDragging || isAnimating) return;
             isDragging = false;
             
-            // Abort the page flip if multiple fingers were detected during the gesture lifecycle
             if (isMultiTouchDetected) {
                 resetCardPosition();
                 return;
@@ -136,63 +200,84 @@
             const dragDuration = dragEndTime - dragStartTime;
             const dragVelocity = Math.abs(deltaX) / dragDuration;
 
-            // 🛑 GESTURE REJECTED: Return smoothly back to center if swipe was too weak or slow
+            if (Math.abs(deltaX) < 10) {
+                executeFlyOffCycle(true); 
+                return;
+            }
+
             if (Math.abs(deltaX) < dragMinDistance || dragVelocity < dragMinVelocity) {
                 resetCardPosition();
                 return;
             }
 
-            // 👍 GESTURE VALIDATED: Trigger 3D Fly-Off Animation
-            isAnimating = true;
-            let nextPageIndex;
-            let flyOutX = deltaX > 0 ? window.innerWidth * 1.2 : -window.innerWidth * 1.2;
-            let finalRotation = deltaX > 0 ? 45 : -45;
-
-            if (deltaX < 0) {
-                // 👈 SWIPE LEFT = GO TO NEXT PAGE
-                nextPageIndex = (currentPageIndex + 1) % pageImages.length;
-            } else {
-                // 👉 SWIPE RIGHT = GO TO PREVIOUS PAGE
-                nextPageIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
-            }
-
-            const prefetchIndex = (nextPageIndex + 1) % pageImages.length;
-
-            // Fly the card completely off screen
-            deckCard.style.transition = 'transform 0.4s ease-in';
-            deckCard.style.transform = `translate3d(${flyOutX}px, 0, 0) rotateX(0deg) rotateY(${finalRotation}deg)`;
-
-            // Swap slides out-of-view and slide back into center from the opposite side
-            setTimeout(() => {
-                // Sync new asset content
-                frontImg.src = pageImages[nextPageIndex];
-                frontCounter.innerText = nextPageIndex;
-                currentPageIndex = nextPageIndex;
-
-                // Teleport the card to the incoming screen boundary hidden buffer silently
-                deckCard.style.transition = 'none';
-                deckCard.style.transform = `translate3d(${-flyOutX * 0.5}px, 0, -500px) rotateX(0deg) rotateY(${-finalRotation}deg)`;
-
-                // Force layout hardware refresh sequence context
-                deckCard.offsetHeight;
-
-                // Smoothly spring back onto center deck stack coordinates
-                deckCard.style.transition = 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
-                deckCard.style.transform = 'translate3d(0, 0, 0) rotateX(0deg) rotateY(0deg)';
-
-                setTimeout(() => {
-                    isAnimating = false;
-                    // Run continuous asynchronous background asset cache preloader
-                    const nextImageCache = new Image();
-                    nextImageCache.src = pageImages[prefetchIndex];
-                }, 600);
-
-            }, 400); // perfectly timed with the fly-off animation duration
+            executeFlyOffCycle(deltaX < 0);
         }
 
-        // 📱 TOUCH LISTENERS (MOBILE ENHANCED FOR MULTI-TOUCH ZOOM PROTECTION)
-        deckCard.addEventListener('touchstart', (e) => {
-            // Guard clause: If more than one finger touches down, block or cancel the drag lifecycle
+        function executeFlyOffCycle(isSwipeLeft) {
+            isAnimating = true;
+
+            let flyOutX = isSwipeLeft ? -window.innerWidth * 1.2 : window.innerWidth * 1.2;
+            let finalRotation = isSwipeLeft ? -25 : 25;
+
+            let nextIndex;
+            if (isSwipeLeft) {
+                nextIndex = (currentPageIndex + 1) % pageImages.length;
+            } else {
+                nextIndex = (currentPageIndex - 1 + pageImages.length) % pageImages.length;
+            }
+
+            const middleIndex = (nextIndex + 1) % pageImages.length;
+            const bottomIndex = (nextIndex + 2) % pageImages.length;
+
+            // 1. Throw top card off visual viewport
+            cardTop.style.transition = 'transform 0.4s ease-in, opacity 0.4s ease';
+            cardTop.style.transform = `translate3d(${flyOutX}px, 0, 80px) rotateX(8deg) rotateY(${finalRotation}deg) rotateZ(${finalRotation * 0.3}deg)`;
+            cardTop.style.opacity = '0';
+
+            // 2. Animate secondary background layers upward smoothly
+            cardMiddle.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
+            cardMiddle.style.transform = `translate3d(0, 0px, 0px) rotateX(4deg) rotateY(-2deg) rotateZ(0deg) scale(1)`;
+
+            cardBottom.style.transition = 'transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.15)';
+            cardBottom.style.transform = `translate3d(0, 14px, -50px) rotateX(4deg) rotateY(-2deg) rotateZ(-0.7deg) scale(0.96)`;
+
+            // 3. Complete asset content swap midway out of sight
+            setTimeout(() => {
+                currentPageIndex = nextIndex;
+
+                topImg.src = pageImages[nextIndex];
+                topCounter.innerText = nextIndex;
+
+                middleImg.src = pageImages[middleIndex];
+                middleCounter.innerText = middleIndex;
+
+                bottomImg.src = pageImages[bottomIndex];
+                bottomCounter.innerText = bottomIndex;
+
+                cardTop.style.transition = 'none';
+                cardTop.style.transform = `translate3d(0, 28px, -100px) rotateX(4deg) rotateY(-2deg) rotateZ(1deg) scale(0.92)`;
+                cardTop.style.opacity = '1'; 
+                
+                cardTop.offsetHeight;
+
+                renderStackPositions(true);
+
+                cardTop.offsetHeight;
+
+                cardTop.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.5s ease';
+                cardMiddle.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.5s ease';
+                cardBottom.style.transition = 'transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.15), opacity 0.5s ease';
+
+                isAnimating = false;
+
+                const prefetchCache = new Image();
+                prefetchCache.src = pageImages[(bottomIndex + 1) % pageImages.length];
+
+            }, 400);
+        }
+
+        // 📱 MOBILE TOUCH HANDLERS
+        stackContainer.addEventListener('touchstart', (e) => {
             if (e.touches.length > 1) {
                 isMultiTouchDetected = true;
                 if (isDragging) {
@@ -205,7 +290,6 @@
         }, { passive: true });
 
         window.addEventListener('touchmove', (e) => {
-            // If another finger enters the layout while moving, trip the flag and snap back instantly
             if (e.touches.length > 1) {
                 isMultiTouchDetected = true;
                 if (isDragging) {
@@ -220,9 +304,7 @@
         }, { passive: false });
 
         window.addEventListener('touchend', (e) => {
-            // If dragging, process the lift event using the tracked coordinates
             if (isDragging) {
-                // e.touches shows remaining fingers. If fingers are still on the glass, ignore the swipe ending.
                 if (e.touches.length > 0 || isMultiTouchDetected) {
                     isMultiTouchDetected = true;
                     isDragging = false;
@@ -235,23 +317,20 @@
             }
         });
 
-        // 💻 MOUSE LISTENERS (DESKTOP)
-        deckCard.addEventListener('mousedown', (e) => {
+        stackContainer.addEventListener('mousedown', (e) => {
             handleDragStart(e.clientX, e.clientY);
         });
-
         window.addEventListener('mousemove', (e) => {
             handleDragMove(e.clientX, e.clientY);
         });
-
         window.addEventListener('mouseup', (e) => {
             handleDragEnd(e.clientX, e.clientY);
         });
 
-        // Block native desktop ghost outline artifacts from interrupting gesture coordinates
-        deckCard.addEventListener('dragstart', (e) => e.preventDefault());
+        stackContainer.addEventListener('dragstart', (e) => e.preventDefault());
 
-        // Automatically fade out notification toast if untouched after 3.5s
+        renderStackPositions();
+
         const toastMessage = document.getElementById('toastMessage');
         setTimeout(() => {
             if (toastMessage && !isAnimating && !isDragging) {
